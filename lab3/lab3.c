@@ -19,10 +19,10 @@ int main(int argc, char *argv[]) {
 
 	/* start readding file here */
 	FILE *fp1, *fp2;  /* file pointer */
-	//fp1=fopen("matAsmall.txt", "r");
-	//fp2=fopen("matBsmall.txt", "r");
-	fp2=fopen("matBlarge.txt", "r");
-	fp1=fopen("matAlarge.txt", "r");
+	fp1=fopen("matAsmall.txt", "r");
+	fp2=fopen("matBsmall.txt", "r");
+	//fp2=fopen("matBlarge.txt", "r");
+	//fp1=fopen("matAlarge.txt", "r");
 	if(fp1==NULL) {
 		printf("cannot open file 1\n");
 		exit(0);
@@ -126,15 +126,15 @@ int main(int argc, char *argv[]) {
 
 		/* write output file */
 		FILE* fp3;
-		//fp3=fopen("small_3426.txt", "w");
-		fp3=fopen("large_3426.txt", "w");
+		fp3=fopen("small_3426.txt", "w");
+		//fp3=fopen("large_3426.txt", "w");
 		if(NULL==fp3) {
 			printf("can't open file for writing\n");
 			exit(6);
 		}
 		fprintf(fp3, "%d %d\n", row1, col2);
 		for(int i=0; i<row1; ++i) {
-			for(int j=0; j<col1; ++j)
+			for(int j=0; j<col2; ++j)
 				fprintf(fp3, "%d ", answer[i][j]);
 			fprintf(fp3, "\n");
 		}
@@ -154,14 +154,9 @@ int main(int argc, char *argv[]) {
 				answer[i][j]=0;
 				for(int k=0; k<row2; ++k)
 					answer[i][j]+=matrixA[i][k]*matrixB[k][j];
-			}
-		}
-
-		/* send result back to rank 0 */
-		for(int i=sep_row*rank; i<sep_row*(rank+1); ++i) {
-			for(int j=0; j<col2; ++j) {
 				result[j]=answer[i][j];
 			}
+			/* send result back to rank 0 */
 			MPI_Send(result, col2, MPI_INT, 0, 1, MPI_COMM_WORLD);
 		}
 	}
