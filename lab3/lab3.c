@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 	int row1, col1, row2, col2;  /* number of row and column for matrix 1 and 2 */
 	int **matrixA, **matrixB, **answer;  /* 2D array for matrix 1, 2 and result */
 
-	/* start readding file here */
+	/* start reading file here */
 	FILE *fp1, *fp2;  /* file pointer */
 	fp1=fopen("matAsmall.txt", "r");
 	fp2=fopen("matBsmall.txt", "r");
@@ -38,40 +38,14 @@ int main(int argc, char *argv[]) {
 		exit(2);
 	}
 
-	printf("reading file 1...\n");
+	/* allocating the matrix space */
 	matrixA=(int **)calloc(row1, sizeof(int *));  /* dynamic memory allocation */
 	for(int i=0; i<row1; ++i) 
 		matrixA[i]=(int *)calloc(col1, sizeof(int));
-	if(matrixA==NULL) {
-		printf("Matrix A memory leaked\n");
-		exit(3);
-	}
-	else {
-		for(int i=0; i<row1; ++i)
-			for(int j=0; j<col1; ++j)
-				fscanf(fp1, "%d", &matrixA[i][j]);
-		printf("Sucessfully read file 1!\n");
-	}
-
-	printf("reading file 2...\n");
 	matrixB=(int **)calloc(row2, sizeof(int *));  /* dynamic memory allocation */
 	for(int i=0; i<row2; ++i) 
 		matrixB[i]=(int *)calloc(col2, sizeof(int));
-	if(matrixB==NULL) {
-		printf("Matrix B memory leaked\n");
-		exit(4);
-	}
-	else {
-		for(int i=0; i<row2; ++i)
-			for(int j=0; j<col2; ++j)
-				fscanf(fp2, "%d", &matrixB[i][j]);
-		printf("Sucessfully read file 2!\n");
-	}
-	fclose(fp1);
-	fclose(fp2);
-	/* finished reading file */
-
-	/* allocate answer matrix */
+	/* allocating answer matrix */
 	answer=(int **)calloc(row1, sizeof(int *));  /* dynamic memory allocation */
 	for(int i=0; i<row1; ++i) 
 		answer[i]=(int *)calloc(col2, sizeof(int));
@@ -79,6 +53,48 @@ int main(int argc, char *argv[]) {
 		printf("Answer Matrix memory leaked\n");
 		exit(5);
 	}
+
+	/* Read matrix data only in rank 0 so as not to waste run time. */
+	if(rank==0) {
+		printf("reading file 1...\n");
+		if(matrixA==NULL) {
+			printf("Matrix A memory leaked\n");
+			exit(3);
+		}
+		else {
+			for(int i=0; i<row1; ++i)
+				for(int j=0; j<col1; ++j)
+					fscanf(fp1, "%d", &matrixA[i][j]);
+			printf("Sucessfully read file 1!\n");
+		}
+
+		printf("reading file 2...\n");
+		if(matrixB==NULL) {
+			printf("Matrix B memory leaked\n");
+			exit(4);
+		}
+		else {
+			for(int i=0; i<row2; ++i)
+				for(int j=0; j<col2; ++j)
+					fscanf(fp2, "%d", &matrixB[i][j]);
+			printf("Sucessfully read file 2!\n");
+		}
+
+	}
+	fclose(fp1);
+	fclose(fp2);
+	/* finished reading file */
+	
+	/* start broadcasting */
+	MPI_Bcast(&row1, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&col1, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&row1, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&col2, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	for(int i=0; i<row1; ++i)
+		MPI_Bcast(matrixA[i], col1, MPI_INT, 0, MPI_COMM_WORLD);
+	for(int i=0; i<row2; ++i)
+		MPI_Bcast(matrixB[i], col2, MPI_INT, 0, MPI_COMM_WORLD);
+	printf("Received broadcast!\n");
 
 	if(rank==0) {
 		double startTime=MPI_Wtime(), endTime;
